@@ -66,6 +66,9 @@ def enviar_email(destinatario, codigo, tentativas=3):
                 raise Exception("Falha ao conectar ao servidor SMTP")
             sleep(2)
 
+@app.route("/home", methods=["GET"])
+def home():
+    return jsonify({'Deu certo': True}), 200
 
 @app.route("/send-email", methods=["POST"])
 def send_email():
