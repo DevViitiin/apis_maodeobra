@@ -72,10 +72,6 @@ def home():
 
 @app.route("/send-email", methods=["POST"])
 def send_email():
-    if not request.is_json:
-        return jsonify({
-            "error": "Content-Type deve ser application/json"
-        }), 415
 
     data = request.get_json()
     email = data.get("email")
