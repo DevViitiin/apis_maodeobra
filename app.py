@@ -16,55 +16,28 @@ EMAIL_REMETENTE = os.environ.get("EMAIL_REMETENTE")
 EMAIL_SENHA = os.environ.get("EMAIL_SENHA")
 
 
-def enviar_email(destinatario, codigo, tentativas=3):
-    if not EMAIL_REMETENTE or not EMAIL_SENHA:
-        raise ValueError("Credenciais de email não configuradas no Render")
+import smtplib
+import ssl
 
-    msg = MIMEMultipart("alternative")
+def enviar_email(destinatario, codigo):
+    msg = MIMEMultipart()
     msg["From"] = EMAIL_REMETENTE
     msg["To"] = destinatario
     msg["Subject"] = "Código de verificação - Mão de Obra"
 
-    corpo_html = f"""
-    <!DOCTYPE html>
-    <html lang="pt-BR">
-    <head>
-        <meta charset="UTF-8">
-    </head>
-    <body style="font-family: Arial, sans-serif;">
-        <h2>Confirmação de Email</h2>
-        <p>Seu código de verificação é:</p>
-        <h1 style="color: #4CAF50;">{codigo}</h1>
-        <p>Este código expira em <strong>10 minutos</strong>.</p>
-        <p>Se você não solicitou este email, ignore.</p>
-    </body>
-    </html>
+    corpo = f"""
+    <h2>Confirmação de Email</h2>
+    <p>Seu código:</p>
+    <h1>{codigo}</h1>
     """
+    msg.attach(MIMEText(corpo, "html"))
 
-    msg.attach(MIMEText(corpo_html, "html", "utf-8"))
+    context = ssl.create_default_context()
 
-    for tentativa in range(tentativas):
-        try:
-            context = ssl.create_default_context()
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=context, timeout=30) as server:
+        server.login(EMAIL_REMETENTE, EMAIL_SENHA)
+        server.send_message(msg)
 
-            with smtplib.SMTP("smtp.gmail.com", 587, timeout=60) as server:
-                server.ehlo()
-                server.starttls(context=context)
-                server.ehlo()
-                server.login(EMAIL_REMETENTE, EMAIL_SENHA)
-                server.send_message(msg)
-
-            print(f"✅ Email enviado para {destinatario}")
-            return True
-
-        except smtplib.SMTPAuthenticationError:
-            raise Exception("❌ Erro de autenticação — use SENHA DE APP do Gmail")
-
-        except (socket.timeout, socket.error, OSError) as e:
-            print(f"Tentativa {tentativa + 1} falhou: {e}")
-            if tentativa == tentativas - 1:
-                raise Exception("Falha ao conectar ao servidor SMTP")
-            sleep(2)
 
 @app.route("/home", methods=["GET"])
 def home():
